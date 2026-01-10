@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+   Alert,
 } from 'react-native';
 import axios from 'axios';
 
@@ -85,11 +86,28 @@ export default function HealthAccessScreen() {
             </Text>
           ))}
 
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: plan.color }]}
-          >
-            <Text style={styles.buttonText}>Join Now</Text>
-          </TouchableOpacity>
+   <TouchableOpacity
+  style={[styles.button, { backgroundColor: plan.color }]}
+  onPress={() =>
+    Alert.alert(
+      'Join Plan',
+      `Do you want to join the  plan?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'OK',
+          onPress: () => {
+            console.log('User joined plan:', plan.name);
+          },
+        },
+      ],
+      { cancelable: true }
+    )
+  }
+>
+  <Text style={styles.buttonText}>Join Now</Text>
+</TouchableOpacity>
+
         </View>
       ))}
 

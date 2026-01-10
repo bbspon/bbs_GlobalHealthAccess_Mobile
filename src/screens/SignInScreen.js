@@ -14,16 +14,21 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import HEALTHLOGO from '../assets/images/banner1.png';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const API_BASE_URL = 'https://healthcare.bbscart.com/api';
 // Same base URL used in web (VITE_API_URI)
 
 const SignInScreen = () => {
   const navigation = useNavigation();
+  const [showPassword, setShowPassword] = useState(false);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [otp, setOtp] = useState('');
+const [showOtp, setShowOtp] = useState(false);
 
 const handleSignIn = async () => {
   if (!email || !password) {
@@ -94,16 +99,35 @@ const handleSignIn = async () => {
         />
       </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-      </View>
+   <View style={styles.inputGroup}>
+  <Text style={styles.label}>Password</Text>
+
+  <View style={{ position: 'relative' }}>
+    <TextInput
+      style={styles.input}
+      placeholder="Enter your password"
+      value={password}
+      onChangeText={setPassword}
+      secureTextEntry={!showPassword}
+    />
+
+    <TouchableOpacity
+      onPress={() => setShowPassword(!showPassword)}
+      style={{
+        position: 'absolute',
+        right: 12,
+        top: 14,
+      }}
+    >
+      <Icon
+        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+        size={22}
+        color="#777"
+      />
+    </TouchableOpacity>
+  </View>
+</View>
+
 
       <TouchableOpacity
         style={styles.button}
@@ -123,6 +147,12 @@ const handleSignIn = async () => {
           Sign Up
         </Text>
       </Text>
+      <View style={{ alignItems: 'center', marginTop: 6 }}>
+  <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+    <Text style={styles.forgotText}>Forgot Password?</Text>
+  </TouchableOpacity>
+</View>
+
     </ScrollView>
   );
 };
@@ -194,4 +224,10 @@ const styles = StyleSheet.create({
     color: '#2E86AB',
     fontWeight: 'bold',
   },
+  forgotText: {
+  color: '#1E88E5',
+  fontSize: 14,
+  fontWeight: '500',
+}
+
 });

@@ -101,7 +101,7 @@ const StakeholdersPage = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.heading}>👥 Stakeholders in the BBSCART Care Ecosystem</Text>
+      <Text style={styles.heading}>👥 Stakeholders in the BBS Global Health Access Care Ecosystem</Text>
       <Text style={styles.subText}>
         These key contributors make affordable healthcare possible.
       </Text>

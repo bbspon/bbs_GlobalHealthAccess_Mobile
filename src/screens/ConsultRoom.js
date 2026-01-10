@@ -179,11 +179,13 @@ const navigation = useNavigation();
         <TouchableOpacity style={styles.successBtn}>
           <Text style={styles.btnText}>Save Rx to Vault</Text>
         </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.endBtn} onPress={handleSaveAll}>
+        
+        <TouchableOpacity style={styles.endBtn} onPress={handleSaveAll}>
         <Text style={styles.btnText}>End Consultation & Save</Text>
       </TouchableOpacity>
+      </View>
+
+   
 
       {saved && <Text style={styles.successText}>✅ Saved to vault</Text>}
 
@@ -273,12 +275,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#198754',
     padding: 10,
     borderRadius: 6,
-    marginTop: 8,
+    marginTop: 12,
     alignItems: 'center',
   },
   endBtn: {
     backgroundColor: '#dc3545',
-    padding: 12,
+    padding: 10,
     borderRadius: 6,
     alignItems: 'center',
     marginVertical: 10,

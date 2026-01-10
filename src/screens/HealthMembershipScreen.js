@@ -336,7 +336,7 @@ export default function HealthMembershipPage() {
             />
 
             <TouchableOpacity
-              style={[styles.buttonOutline, { marginTop: 10 }]}
+              style={[styles.buttonOutline, { margin: 12 }]}
               onPress={() => setShowUpgrade(false)}
             >
               <Text style={{ color: '#333' }}>Close</Text>
@@ -400,19 +400,19 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
+    // marginTop: 12,
   },
   buttonOutline: {
     borderWidth: 1,
     borderColor: '#007bff',
     padding: 8,
     borderRadius: 6,
+    alignItems: 'center',
+    marginTop: 8,
   },
   buttonOutlineDark: {
-    borderWidth: 1,
-    borderColor: '#333',
-    padding: 8,
-    borderRadius: 6,
+    marginTop: 18,
+    
   },
   buttonDanger: {
     backgroundColor: '#dc3545',

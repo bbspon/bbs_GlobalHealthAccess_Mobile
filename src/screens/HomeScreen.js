@@ -273,7 +273,7 @@ const handleCityChange = async (city) => {
               >
                 <View style={styles.modalOverlay}>
                   <View style={styles.modalCard}>
-                    <Text style={styles.modalTitle}>Select Location</Text>
+                    <Text style={styles.modalTitle}>Select  Location</Text>
 
                     {/* Country */}
                     <Text style={styles.label}>Country</Text>
@@ -327,15 +327,17 @@ const handleCityChange = async (city) => {
                       ))}
                     </View>
 
-                    <TouchableOpacity
+                
+                  </View>
+                      <TouchableOpacity
                       style={styles.closeBtn}
                       onPress={() => setShowLocationModal(false)}
                     >
                       <Text style={styles.closeText}>Cancel</Text>
                     </TouchableOpacity>
-                  </View>
                 </View>
               </Modal>
+              
               <Menu
                 visible={visibleLang}
                 onDismiss={() => closeMenu(setVisibleLang)}
@@ -678,7 +680,7 @@ const handleCityChange = async (city) => {
             title="Is this a health insurance plan?"
             left={props => <List.Icon {...props} icon="information" />}
           >
-            <Text style={{ color: "white" }}>
+            <Text style={{ color: "white", padding: 15 }}>
               No. This is a prepaid membership model with fixed benefits. No
               claim forms or hassles.
             </Text>
@@ -687,7 +689,7 @@ const handleCityChange = async (city) => {
             title="What happens if I don't use it?"
             left={props => <List.Icon {...props} icon="information" />}
           >
-            <Text style={{ color: "white" }}>
+            <Text style={{ color: "white" , padding: 15}}>
               Your benefits reset monthly. If unused, the next month starts
               fresh. You can cancel anytime.
             </Text>
@@ -696,7 +698,7 @@ const handleCityChange = async (city) => {
             title="Can I use this with my family?"
             left={props => <List.Icon {...props} icon="information" />}
           >
-            <Text style={{ color: "white" }}>Yes! We offer family packs at discounted pricing.</Text>
+            <Text style={{ color: "white", padding: 15 }}>Yes! We offer family packs at discounted pricing.</Text>
           </List.Accordion>
         </List.Section>
 
@@ -894,6 +896,7 @@ const styles = StyleSheet.create({
   /* ---------- Testimonials ---------- */
   testimonialCard: {
     marginTop: 22,
+    marginBottom: 20,
     backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: 16,
@@ -959,7 +962,7 @@ const styles = StyleSheet.create({
   changeText: { fontSize: 12, color: "#0b5ed7" },
 
   modalOverlay: {
-    flex: 1,
+    flex:1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     padding: 20,
@@ -969,6 +972,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
+    height: "100%",
   },
 
   modalTitle: {
