@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import Icon from 'react-native-vector-icons/Ionicons';
 import HEALTHLOGO from '../assets/images/banner1.png';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -26,6 +27,7 @@ const SignInScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [otp, setOtp] = useState('');
 const [showOtp, setShowOtp] = useState(false);
@@ -164,7 +166,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: '#F4FBFD',
     paddingHorizontal: 25,
-    paddingTop: 40,
+    paddingTop: 10,
   },
   header: {
     alignItems: 'center',

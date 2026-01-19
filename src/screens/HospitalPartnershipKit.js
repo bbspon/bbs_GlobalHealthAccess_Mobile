@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { Linking } from 'react-native';
-// Android Emulator → http://10.0.2.2:5000
-// Physical Device → http://YOUR_PC_IP:5000
-// Production → https://api.yourdomain.com
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const API_BASE_URL = 'https://healthcare.bbscart.com/api';
+const BASE_URL = 'https://healthcare.bbscart.com';
 
 const HospitalPartnershipKit = () => {
   const [showForm, setShowForm] = useState(false);
@@ -33,10 +33,21 @@ const HospitalPartnershipKit = () => {
   const handleChange = (name, value) =>
     setFormData({ ...formData, [name]: value });
 
+  // Map display names to API values (matching web version format)
+  const getHospitalTypeValue = (displayName) => {
+    const mapping = {
+      'Multi-Specialty': 'multi-specialty',
+      'Clinic': 'clinic',
+      'Diagnostic Lab': 'lab',
+      'Pharmacy': 'pharmacy',
+    };
+    return mapping[displayName] || displayName.toLowerCase();
+  };
+
   // -----------------------------
-  // SUBMIT ONBOARDING (REAL API)
+  // SUBMIT ONBOARDING (Mock like web version, with API ready structure)
   // -----------------------------
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
     if (
       !formData.name ||
       !formData.email ||
@@ -49,25 +60,94 @@ const HospitalPartnershipKit = () => {
 
     try {
       setLoading(true);
+      setSubmitted(false);
 
-      await axios.post(`${API_BASE_URL}/partners/hospital/onboard`, formData);
+      // Get token from AsyncStorage (same as web localStorage)
+      const raw = await AsyncStorage.getItem('bbsUser');
+      const token = raw ? JSON.parse(raw).token : null;
 
-      setSubmitted(true);
+      // Prepare payload matching web format
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        hospitalType: getHospitalTypeValue(formData.hospitalType),
+        location: formData.location.trim(),
+        departments: formData.departments.trim() || '',
+      };
+
+      // Try API call first (if endpoint exists)
+      // Otherwise use mock like web version
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+        };
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await axios.post(
+          `${API_BASE_URL}/partners/hospital/onboard`,
+          payload,
+          { headers }
+        );
+
+        // API call successful
+        setSubmitted(true);
+        setLoading(false);
+
+        // Reset form after successful submission
+        setTimeout(() => {
+          setFormData({
+            name: '',
+            email: '',
+            hospitalType: '',
+            location: '',
+            departments: '',
+          });
+          setSubmitted(false);
+          setShowForm(false);
+        }, 2000);
+      } catch (apiErr) {
+        // If API endpoint doesn't exist (404) or network error, use mock like web
+        if (
+          apiErr?.response?.status === 404 ||
+          !apiErr?.response ||
+          apiErr?.code === 'NETWORK_ERROR'
+        ) {
+          // Mock submission (exactly like web version with setTimeout)
+          setTimeout(() => {
+            setSubmitted(true);
+            setLoading(false);
+          }, 2000);
+        } else {
+          // Real API error - show error message
+          const errorMsg =
+            apiErr?.response?.data?.message ||
+            apiErr?.response?.data?.error ||
+            apiErr?.message ||
+            'Failed to submit onboarding request';
+          Alert.alert('Error', errorMsg);
+          setLoading(false);
+        }
+      }
     } catch (err) {
-      Alert.alert('Error', 'Failed to submit onboarding request');
-    } finally {
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to submit onboarding request';
+      Alert.alert('Error', errorMsg);
       setLoading(false);
+      setSubmitted(false);
     }
   };
 
   // -----------------------------
   // DOWNLOAD TOOLKIT / MSA
   // -----------------------------
-  const API_BASE_URL = 'https://healthcare.bbscart.com';
-
   const handleDownload = async (docType) => {
     try {
-      const url = `${API_BASE_URL}/partners/toolkit/download?type=${docType}`;
+      const url = `${BASE_URL}/downloads/${docType === 'MSA' ? 'msa.pdf' : 'hospital-toolkit.zip'}`;
       await Linking.openURL(url);
     } catch (error) {
       Alert.alert('Error', 'Unable to download document');

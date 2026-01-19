@@ -7,52 +7,27 @@ import {
   Alert,
   StyleSheet,
   ScrollView,
-  PermissionsAndroid,
   Platform,
 } from "react-native";
 
 import DocumentPicker from "react-native-document-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+
+const API_BASE_URL = "https://healthcare.bbscart.com/api";
 
 export default function HospitalOnboarding() {
   const [hospitalName, setHospitalName] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
   const [license, setLicense] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  /* -------------------------
-     ANDROID STORAGE PERMISSION
-  -------------------------- */
-  const requestStoragePermission = async () => {
-    if (Platform.OS !== "android") return true;
-
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        {
-          title: "Storage Permission",
-          message: "Allow access to upload documents",
-          buttonPositive: "Allow",
-          buttonNegative: "Cancel",
-        }
-      );
-
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      return false;
-    }
-  };
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   /* -------------------------
      PICK LICENSE FILE
   -------------------------- */
   const pickLicense = async () => {
-    const hasPermission = await requestStoragePermission();
-
-    if (!hasPermission) {
-      Alert.alert("Permission denied", "Storage permission is required");
-      return;
-    }
-
     try {
       const res = await DocumentPicker.pickSingle({
         type: [
@@ -64,6 +39,7 @@ export default function HospitalOnboarding() {
       });
 
       setLicense(res);
+      setErrorMsg("");
     } catch (err) {
       if (!DocumentPicker.isCancel(err)) {
         Alert.alert("Error", "Unable to select file");
@@ -75,41 +51,65 @@ export default function HospitalOnboarding() {
      SUBMIT FORM
   -------------------------- */
   const handleSubmit = async () => {
-    if (!hospitalName || !license) {
-      Alert.alert("Error", "All fields are required");
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (!hospitalName.trim() || !registrationNumber.trim()) {
+      setErrorMsg("Please enter hospital name and registration number.");
       return;
     }
 
-    setLoading(true);
-
-    const formData = new FormData();
-
-    formData.append("hospitalName", hospitalName);
-    formData.append("license", {
-      uri:
-        Platform.OS === "android"
-          ? license.fileCopyUri || license.uri
-          : license.uri,
-      name: license.name || "license.pdf",
-      type: license.type || "application/pdf",
-    });
-
     try {
-      await axios.post(
-        "https://healthcare.bbscart.com/api/hospital/onboard",
+      setLoading(true);
+
+      // Get token from AsyncStorage (same as web localStorage)
+      const raw = await AsyncStorage.getItem("bbsUser");
+      const token = raw ? JSON.parse(raw).token : null;
+      
+      if (!token) {
+        setErrorMsg("You are not logged in. Please log in and try again.");
+        setLoading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("hospitalName", hospitalName.trim()); // matches backend
+      formData.append("registrationNumber", registrationNumber.trim());
+      
+      if (license) {
+        formData.append("license", {
+          uri:
+            Platform.OS === "android"
+              ? license.fileCopyUri || license.uri
+              : license.uri,
+          name: license.name || "license.pdf",
+          type: license.type || "application/pdf",
+        });
+      }
+
+      const { data } = await axios.post(
+        `${API_BASE_URL}/hospitals/onboarding`,
         formData,
         {
           headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         }
       );
 
-      Alert.alert("Success", "Hospital onboarded successfully");
+      // backend returns { record: {...} }
+      setSuccessMsg(`Onboarding submitted. Ref: ${data?.record?._id || ""}`);
       setHospitalName("");
+      setRegistrationNumber("");
       setLicense(null);
-    } catch (error) {
-      Alert.alert("Upload failed", "Please try again");
+    } catch (err) {
+      const apiMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to submit.";
+      setErrorMsg(apiMsg);
     } finally {
       setLoading(false);
     }
@@ -122,24 +122,54 @@ export default function HospitalOnboarding() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Hospital Onboarding</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Hospital Name"
-        value={hospitalName}
-        onChangeText={setHospitalName}
-      />
+      {successMsg ? (
+        <View style={styles.successBox}>
+          <Text style={styles.successText}>{successMsg}</Text>
+        </View>
+      ) : null}
+      
+      {errorMsg ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        </View>
+      ) : null}
 
-      <TouchableOpacity style={styles.uploadBtn} onPress={pickLicense}>
-        <Text style={styles.uploadText}>
-          {license ? "Change License File" : "Upload License"}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Hospital Name</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter hospital name"
+          value={hospitalName}
+          onChangeText={setHospitalName}
+        />
+      </View>
 
-      {license && (
-        <Text style={styles.fileName}>
-          Selected: {license.name}
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Registration Number</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter registration number"
+          value={registrationNumber}
+          onChangeText={setRegistrationNumber}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Upload License Document</Text>
+        <TouchableOpacity style={styles.uploadBtn} onPress={pickLicense}>
+          <Text style={styles.uploadText}>
+            {license ? "Change License File" : "Upload License"}
+          </Text>
+        </TouchableOpacity>
+        {license && (
+          <Text style={styles.fileName}>
+            Selected: {license.name}
+          </Text>
+        )}
+        <Text style={styles.helperText}>
+          Accepted: PDF or image (JPG/PNG/WebP)
         </Text>
-      )}
+      </View>
 
       <TouchableOpacity
         style={[styles.submitBtn, loading && { opacity: 0.6 }]}
@@ -168,12 +198,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
   },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 6,
+    color: "#333",
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 10,
-    marginBottom: 12,
     borderRadius: 6,
+    backgroundColor: "#fff",
   },
   uploadBtn: {
     backgroundColor: "#0dcaf0",
@@ -189,7 +228,12 @@ const styles = StyleSheet.create({
   fileName: {
     fontSize: 12,
     color: "#555",
-    marginBottom: 12,
+    marginBottom: 4,
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#666",
+    fontStyle: "italic",
   },
   submitBtn: {
     backgroundColor: "#198754",
@@ -201,5 +245,25 @@ const styles = StyleSheet.create({
   submitText: {
     color: "#fff",
     fontWeight: "700",
+  },
+  successBox: {
+    backgroundColor: "#d1e7dd",
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 16,
+  },
+  successText: {
+    color: "#0f5132",
+    fontSize: 14,
+  },
+  errorBox: {
+    backgroundColor: "#f8d7da",
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: "#842029",
+    fontSize: 14,
   },
 });

@@ -70,8 +70,10 @@ export default function UserFeedbackRatingsSystem({ partnerId }) {
 
   const [prompt, setPrompt] = useState({
     emoji: '',
-    category: '',
-    comment: '',
+    type: '', // Service type matching web: "opd", "doctor", "lab", "pharmacy", "app"
+    rating: '', // Rating 1-5 (numeric)
+    tags: [], // Tags array matching web
+    comment: '', // Comment/feedback text matching web
     image: null,
     anonymous: false,
   });
@@ -84,10 +86,19 @@ export default function UserFeedbackRatingsSystem({ partnerId }) {
     }
   };
 
-  /* ===== SUBMIT FEEDBACK (ONLY REAL API) ===== */
+  /* ===== SUBMIT FEEDBACK (Matching web version) ===== */
   const handleSubmitPrompt = async () => {
-    if (!prompt.emoji) {
-      Alert.alert('Validation', 'Please select a rating');
+    // Validation (matching web)
+    if (!prompt.type) {
+      Alert.alert('Validation', 'Service type is required');
+      return;
+    }
+    if (!prompt.rating || prompt.rating < 1 || prompt.rating > 5) {
+      Alert.alert('Validation', 'Rating must be between 1 and 5');
+      return;
+    }
+    if (!prompt.comment) {
+      Alert.alert('Validation', 'Feedback text is required');
       return;
     }
 
@@ -100,37 +111,96 @@ export default function UserFeedbackRatingsSystem({ partnerId }) {
         return;
       }
 
-      const formData = new FormData();
-      formData.append('type', prompt.emoji);
-      formData.append(
-        'rating',
-        prompt.emoji === '😃' ? 5 : prompt.emoji === '😐' ? 3 : 1,
-      );
-      formData.append('message', prompt.comment || '');
-      formData.append('category', prompt.category || '');
-      formData.append('anonymous', prompt.anonymous);
-      formData.append('partnerId', partnerId || '');
+      // Map emoji to rating if rating not set explicitly
+      const ratingValue = prompt.rating || 
+        (prompt.emoji === '😃' ? 5 : prompt.emoji === '😐' ? 3 : 1);
 
-      if (prompt.image) {
-        formData.append('image', {
-          uri: prompt.image.uri,
-          type: prompt.image.type,
-          name: prompt.image.fileName,
+      // Prepare payload matching web version structure
+      const hasImage = !!prompt.image?.uri;
+
+      if (!hasImage) {
+        // JSON submission (no image) - matching web structure
+        const payload = {
+          type: prompt.type,
+          rating: parseInt(ratingValue),
+          tags: Array.isArray(prompt.tags) ? prompt.tags : (prompt.tags ? [prompt.tags] : []),
+          comment: prompt.comment,
+          image: null,
+          submittedAt: new Date().toISOString(),
+        };
+
+        const res = await axios.post(
+          `${API_BASE_URL}/feedback/submit`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        Alert.alert('Success', 'Feedback submitted successfully');
+        // Reset form
+        setPrompt({
+          emoji: '',
+          type: '',
+          rating: '',
+          tags: [],
+          comment: '',
+          image: null,
+          anonymous: false,
         });
+        setStep('partnerProfile');
+        return;
       }
 
-      await axios.post(`${API_BASE_URL}/feedback/submit`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
+      // Multipart submission (with image) - matching web structure
+      const formData = new FormData();
+      formData.append('type', prompt.type);
+      formData.append('rating', String(parseInt(ratingValue)));
+      formData.append('tags', JSON.stringify(Array.isArray(prompt.tags) ? prompt.tags : (prompt.tags ? [prompt.tags] : [])));
+      formData.append('comment', prompt.comment);
+      formData.append('submittedAt', new Date().toISOString());
+
+      // Append image file
+      formData.append('image', {
+        uri: prompt.image.uri,
+        name: prompt.image.fileName || 'feedback-image.jpg',
+        type: prompt.image.type || 'image/jpeg',
       });
 
+      const res = await axios.post(
+        `${API_BASE_URL}/feedback/submit`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
       Alert.alert('Success', 'Feedback submitted successfully');
+      // Reset form
+      setPrompt({
+        emoji: '',
+        type: '',
+        rating: '',
+        tags: [],
+        comment: '',
+        image: null,
+        anonymous: false,
+      });
       setStep('partnerProfile');
     } catch (err) {
       console.error('❌ Feedback submit failed', err);
-      Alert.alert('Error', 'Failed to submit feedback');
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to submit feedback';
+      Alert.alert('Error', errorMsg);
     }
   };
 
@@ -151,26 +221,55 @@ export default function UserFeedbackRatingsSystem({ partnerId }) {
         <View style={styles.card}>
           <Text style={styles.title}>Post-Visit Feedback</Text>
 
-          <View style={styles.row}>
-            {['😃', '😐', '😠'].map(e => (
-              <TouchableOpacity
-                key={e}
-                style={[
-                  styles.emojiBtn,
-                  prompt.emoji === e && styles.emojiActive,
-                ]}
-                onPress={() => setPrompt({ ...prompt, emoji: e })}
-              >
-                <Text style={styles.emoji}>{e}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
+          {/* Service Type (matching web version) */}
+          <Text style={styles.label}>Service Type</Text>
           <TextInput
-            placeholder="Category"
+            placeholder="e.g., doctor, lab, opd, pharmacy, app"
             style={styles.input}
-            value={prompt.category}
-            onChangeText={t => setPrompt({ ...prompt, category: t })}
+            value={prompt.type}
+            onChangeText={t => setPrompt({ ...prompt, type: t })}
+          />
+
+          {/* Rating Selection */}
+          <Text style={styles.label}>Rating (1-5)</Text>
+          <View style={styles.row}>
+            {['😃', '😐', '😠'].map(e => {
+              const rating = e === '😃' ? 5 : e === '😐' ? 3 : 1;
+              const isSelected = prompt.rating === rating || (!prompt.rating && prompt.emoji === e);
+              return (
+                <TouchableOpacity
+                  key={e}
+                  style={[
+                    styles.emojiBtn,
+                    isSelected && styles.emojiActive,
+                  ]}
+                  onPress={() => setPrompt({ ...prompt, emoji: e, rating: rating })}
+                >
+                  <Text style={styles.emoji}>{e}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          
+          {/* Numeric Rating Input (matching web) */}
+          <TextInput
+            placeholder="Or enter rating (1-5)"
+            style={styles.input}
+            keyboardType="numeric"
+            value={prompt.rating}
+            onChangeText={t => setPrompt({ ...prompt, rating: t })}
+          />
+
+          {/* Tags (matching web version - comma separated) */}
+          <Text style={styles.label}>Tags (comma separated)</Text>
+          <TextInput
+            placeholder="E.g., Clean, Delay, Staff"
+            style={styles.input}
+            value={Array.isArray(prompt.tags) ? prompt.tags.join(', ') : prompt.tags}
+            onChangeText={t => {
+              const tagsArray = t.split(',').map(tag => tag.trim()).filter(tag => tag);
+              setPrompt({ ...prompt, tags: tagsArray });
+            }}
           />
 
           <TextInput
@@ -258,6 +357,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  label: { fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 8 },
   row: { flexDirection: 'row', marginBottom: 12 },
   emojiBtn: {
     padding: 10,
