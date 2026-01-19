@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import Icon from 'react-native-vector-icons/Ionicons';
 import HEALTHLOGO from '../assets/images/banner1.png';
 
 const API_BASE_URL = 'https://healthcare.bbscart.com/api';
@@ -24,6 +25,7 @@ const SignInScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
 const handleSignIn = async () => {
   if (!email || !password) {
@@ -96,13 +98,29 @@ const handleSignIn = async () => {
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <View style={{ position: 'relative' }}>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            style={{
+              position: 'absolute',
+              right: 12,
+              top: 14,
+            }}
+          >
+            <Icon
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={22}
+              color="#777"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <TouchableOpacity
@@ -134,7 +152,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: '#F4FBFD',
     paddingHorizontal: 25,
-    paddingTop: 40,
+    paddingTop: 10,
   },
   header: {
     alignItems: 'center',

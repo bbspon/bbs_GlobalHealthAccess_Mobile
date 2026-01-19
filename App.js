@@ -630,6 +630,8 @@ function AppShell() {
           <RootStack.Screen name="FormCard" component={FormCard} />
           <RootStack.Screen name="QR" component={QR} />
           <RootStack.Screen name="PlanDetails" component={PlanDetailsScreen} />
+          <RootStack.Screen name="PlanTerms" component={TermsConditionsAdvanced} />
+          <RootStack.Screen name="CoverageStatus" component={CoverageStatus} />
           <RootStack.Screen name="DoctorReferral" component={DoctorReferral} />
 
         </RootStack.Navigator>

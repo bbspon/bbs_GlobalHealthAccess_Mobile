@@ -79,6 +79,18 @@ const PlanCard = ({ plan }) => {
         >
           <Text style={styles.coverageText}>Coverage Status</Text>
         </TouchableOpacity>
+
+        {/* Family Timeline Button (matching web version) */}
+        <TouchableOpacity
+          style={styles.familyTimelineBtn}
+          onPress={() =>
+            navigation.navigate('FamilyHealthTimeline', {
+              planId: plan._id,
+            })
+          }
+        >
+          <Text style={styles.familyTimelineText}>Family Timeline</Text>
+        </TouchableOpacity>
       </View>
 
       {/* 🔥 Buy Plan Modal */}
@@ -176,6 +188,20 @@ const styles = StyleSheet.create({
   coverageText: {
     color: '#fff',
     fontWeight: '700',
+  },
+  familyTimelineBtn: {
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: '#212529',
+    backgroundColor: 'transparent',
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  familyTimelineText: {
+    color: '#212529',
+    fontWeight: '600',
+    fontSize: 13,
   },
 });
 

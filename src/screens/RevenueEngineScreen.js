@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -91,7 +91,7 @@ const RevenueEngineDashboardScreen = () => {
   );
 
   /* ---------------- Handlers ---------------- */
-  const handleSaveRule = () => {
+  const handleSaveRule = useCallback(() => {
     if (!region || !condition || !cut) {
       Alert.alert("Missing Info", "Please fill all fields");
       return;
@@ -100,13 +100,30 @@ const RevenueEngineDashboardScreen = () => {
     setRegion("");
     setCondition("");
     setCut("");
-  };
+  }, [region, condition, cut]);
 
-  const handleGenerateForecast = () => {
+  const handleGenerateForecast = useCallback(() => {
     if (!forecastScenario) return;
     Alert.alert("Forecast Generated", forecastScenario);
     setForecastScenario("");
-  };
+  }, [forecastScenario]);
+
+  // Handlers for input changes
+  const handleRegionChange = useCallback((text) => {
+    setRegion(text);
+  }, []);
+
+  const handleConditionChange = useCallback((text) => {
+    setCondition(text);
+  }, []);
+
+  const handleCutChange = useCallback((text) => {
+    setCut(text);
+  }, []);
+
+  const handleForecastScenarioChange = useCallback((text) => {
+    setForecastScenario(text);
+  }, []);
 
   /* ---------------- Cards ---------------- */
   const AgentCard = ({ item }) => (
@@ -132,157 +149,176 @@ const RevenueEngineDashboardScreen = () => {
     </View>
   );
 
-  /* ---------------- Tabs ---------------- */
-  const AdminTab = () => (
-    <View style={styles.card}>
-      <Text style={styles.sectionTitle}>Commission Rule Editor</Text>
+  // Memoize tab content to prevent recreating on every render
+  const tabContent = useMemo(() => {
+    switch (activeTab) {
+      case 'admin':
+        return (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Commission Rule Editor</Text>
 
-      <Text style={styles.label}>Region *</Text>
-      <TextInput style={styles.input} value={region} onChangeText={setRegion} />
+            <Text style={styles.label}>Region *</Text>
+            <TextInput 
+              style={styles.input} 
+              value={region} 
+              onChangeText={handleRegionChange}
+              placeholder="Enter region"
+            />
 
-      <Text style={styles.label}>Condition *</Text>
-      <TextInput
-        style={styles.input}
-        value={condition}
-        onChangeText={setCondition}
-      />
+            <Text style={styles.label}>Condition *</Text>
+            <TextInput
+              style={styles.input}
+              value={condition}
+              onChangeText={handleConditionChange}
+              placeholder="Enter condition"
+            />
 
-      <Text style={styles.label}>BBSCART Cut % *</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={cut}
-        onChangeText={setCut}
-      />
+            <Text style={styles.label}>BBSCART Cut % *</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={cut}
+              onChangeText={handleCutChange}
+              placeholder="Enter percentage"
+            />
 
-      <TouchableOpacity style={styles.button} onPress={handleSaveRule}>
-        <Text style={styles.buttonText}>Save Rule</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const AgentTab = () => (
-    <FlatList
-      data={agentRows}
-      keyExtractor={(_, i) => i.toString()}
-      renderItem={({ item }) => <AgentCard item={item} />}
-      contentContainerStyle={{ paddingBottom: rs(12) }}
-    />
-  );
-
-  const HospitalTab = () => {
-    const cities = ["Chennai", "Dubai", "Delhi"];
-    return (
-      <View>
-        <View style={styles.segment}>
-          {cities.map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[
-                styles.segmentItem,
-                selectedCity === c && styles.segmentActive,
-              ]}
-              onPress={() => setSelectedCity(c)}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  selectedCity === c && styles.segmentTextActive,
-                ]}
-              >
-                {c}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.meta}>
-            <Text style={styles.bold}>{selectedCity}</Text> Revenue: ₹4.6L
-          </Text>
-          <Text style={styles.meta}>OPD: 74%</Text>
-          <Text style={styles.meta}>Labs: 56%</Text>
-          <Text style={[styles.meta, { color: "#B42318" }]}>
-            Dental: 12%
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
-  const ForecastTab = () => (
-    <View style={styles.card}>
-      <Text style={styles.meta}>MRR: ₹1.42 Cr</Text>
-      <Text style={styles.meta}>Churn: 7.8%</Text>
-
-      <Text style={styles.label}>Scenario *</Text>
-      <TextInput
-        style={styles.input}
-        value={forecastScenario}
-        onChangeText={setForecastScenario}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleGenerateForecast}>
-        <Text style={styles.buttonText}>Generate Forecast</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const InvoiceTab = () => (
-    <FlatList
-      data={invoiceRows}
-      keyExtractor={(_, i) => i.toString()}
-      renderItem={({ item }) => <InvoiceCard item={item} />}
-      contentContainerStyle={{ paddingBottom: rs(12) }}
-    />
-  );
-
-  const ComplianceTab = () => (
-    <View style={styles.card}>
-      <Text style={styles.meta}>✅ GDPR / DPDPA / PDPL Ready</Text>
-      <Text style={styles.meta}>🔐 Encrypted Financial Data</Text>
-      <Text style={styles.meta}>👨‍⚖️ Role-based Access</Text>
-      <Text style={styles.meta}>📜 Auto Audit Logs</Text>
-    </View>
-  );
-
-  const AITab = () => (
-    <View style={styles.card}>
-      <TouchableOpacity
-        style={styles.buttonOutline}
-        onPress={() => setShowAIAdvice(true)}
-      >
-        <Text style={styles.buttonOutlineText}>Ask AI Revenue Bot</Text>
-      </TouchableOpacity>
-
-      <Modal transparent visible={showAIAdvice} animationType="fade">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.sectionTitle}>AI Suggestions</Text>
-            <Text style={styles.meta}>✅ Boost Premium in Tier-2 cities</Text>
-            <Text style={styles.meta}>⚠️ Diagnostics drop in Sharjah</Text>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setShowAIAdvice(false)}
-            >
-              <Text style={styles.buttonText}>Close</Text>
+            <TouchableOpacity style={styles.button} onPress={handleSaveRule}>
+              <Text style={styles.buttonText}>Save Rule</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-    </View>
-  );
+        );
+      case 'agent':
+        return (
+          <FlatList
+            data={agentRows}
+            keyExtractor={(_, i) => i.toString()}
+            renderItem={({ item }) => <AgentCard item={item} />}
+            contentContainerStyle={{ paddingBottom: rs(12) }}
+          />
+        );
+      case 'hospital':
+        const cities = ["Chennai", "Dubai", "Delhi"];
+        return (
+          <View>
+            <View style={styles.segment}>
+              {cities.map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  style={[
+                    styles.segmentItem,
+                    selectedCity === c && styles.segmentActive,
+                  ]}
+                  onPress={() => setSelectedCity(c)}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      selectedCity === c && styles.segmentTextActive,
+                    ]}
+                  >
+                    {c}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-  const tabContent = {
-    admin: <AdminTab />,
-    agent: <AgentTab />,
-    hospital: <HospitalTab />,
-    forecast: <ForecastTab />,
-    invoice: <InvoiceTab />,
-    compliance: <ComplianceTab />,
-    ai: <AITab />,
-  }[activeTab];
+            <View style={styles.card}>
+              <Text style={styles.meta}>
+                <Text style={styles.bold}>{selectedCity}</Text> Revenue: ₹4.6L
+              </Text>
+              <Text style={styles.meta}>OPD: 74%</Text>
+              <Text style={styles.meta}>Labs: 56%</Text>
+              <Text style={[styles.meta, { color: "#B42318" }]}>
+                Dental: 12%
+              </Text>
+            </View>
+          </View>
+        );
+      case 'forecast':
+        return (
+          <View style={styles.card}>
+            <Text style={styles.meta}>MRR: ₹1.42 Cr</Text>
+            <Text style={styles.meta}>Churn: 7.8%</Text>
+
+            <Text style={styles.label}>Scenario *</Text>
+            <TextInput
+              style={styles.input}
+              value={forecastScenario}
+              onChangeText={handleForecastScenarioChange}
+              placeholder="Enter scenario"
+            />
+
+            <TouchableOpacity style={styles.button} onPress={handleGenerateForecast}>
+              <Text style={styles.buttonText}>Generate Forecast</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      case 'invoice':
+        return (
+          <FlatList
+            data={invoiceRows}
+            keyExtractor={(_, i) => i.toString()}
+            renderItem={({ item }) => <InvoiceCard item={item} />}
+            contentContainerStyle={{ paddingBottom: rs(12) }}
+          />
+        );
+      case 'compliance':
+        return (
+          <View style={styles.card}>
+            <Text style={styles.meta}>✅ GDPR / DPDPA / PDPL Ready</Text>
+            <Text style={styles.meta}>🔐 Encrypted Financial Data</Text>
+            <Text style={styles.meta}>👨‍⚖️ Role-based Access</Text>
+            <Text style={styles.meta}>📜 Auto Audit Logs</Text>
+          </View>
+        );
+      case 'ai':
+        return (
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.buttonOutline}
+              onPress={() => setShowAIAdvice(true)}
+            >
+              <Text style={styles.buttonOutlineText}>Ask AI Revenue Bot</Text>
+            </TouchableOpacity>
+
+            <Modal transparent visible={showAIAdvice} animationType="fade">
+              <View style={styles.modalBackdrop}>
+                <View style={styles.modalCard}>
+                  <Text style={styles.sectionTitle}>AI Suggestions</Text>
+                  <Text style={styles.meta}>✅ Boost Premium in Tier-2 cities</Text>
+                  <Text style={styles.meta}>⚠️ Diagnostics drop in Sharjah</Text>
+
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => setShowAIAdvice(false)}
+                  >
+                    <Text style={styles.buttonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          </View>
+        );
+      default:
+        return null;
+    }
+  }, [
+    activeTab,
+    region,
+    condition,
+    cut,
+    forecastScenario,
+    selectedCity,
+    showAIAdvice,
+    handleRegionChange,
+    handleConditionChange,
+    handleCutChange,
+    handleForecastScenarioChange,
+    handleSaveRule,
+    handleGenerateForecast,
+    agentRows,
+    invoiceRows,
+  ]);
 
   /* ---------------- Render ---------------- */
   return (

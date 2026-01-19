@@ -9,21 +9,23 @@ import {
   ScrollView,
   Switch,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRoute } from '@react-navigation/native';
 import axios from 'axios';
 
-// Android Emulator → http://10.0.2.2:5000
-// Physical Device → http://YOUR_PC_IP:5000
-// Production → https://api.yourdomain.com
 const API_BASE_URL = 'https://healthcare.bbscart.com/api';
 
 export default function FamilyHealthTimeline() {
+  const route = useRoute();
+  const { planId } = route.params || {};
+
   const [showModal, setShowModal] = useState(false);
   const [adminMode, setAdminMode] = useState(false);
   const [members, setMembers] = useState([]);
-  const [currentPerson, setCurrentPerson] = useState('');
+  const [currentPerson, setCurrentPerson] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const [newEvent, setNewEvent] = useState({
@@ -33,7 +35,7 @@ export default function FamilyHealthTimeline() {
     notes: '',
   });
 
-  const selectedMember = members.find(m => m.memberName === currentPerson);
+  const selectedMember = members.find(m => m._id === currentPerson);
 
   /* ---------------- AUTH HELPERS ---------------- */
   const getSession = async () => {
@@ -41,27 +43,58 @@ export default function FamilyHealthTimeline() {
     return raw ? JSON.parse(raw) : null;
   };
 
-  /* ---------------- FETCH TIMELINE ---------------- */
+  /* ---------------- FETCH TIMELINE (matching web version) ---------------- */
   const loadTimeline = async () => {
     try {
       setLoading(true);
+      
+      if (!planId) {
+        Alert.alert(
+          'Plan ID Required',
+          'Please select a plan from the Plans page to view the Family Timeline.',
+          [{ text: 'OK' }]
+        );
+        setLoading(false);
+        return;
+      }
+
       const session = await getSession();
-      if (!session?.token) return;
+      if (!session?.token) {
+        Alert.alert('Auth Error', 'Please login again');
+        return;
+      }
 
-      const res = await axios.get(API_BASE_URL, {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-        },
-      });
+      // Match web endpoint: GET /api/user-plan/${planId}/family
+      const response = await axios.get(
+        `${API_BASE_URL}/user-plan/${planId}/family`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.token}`,
+          },
+        }
+      );
 
-      const data = res.data?.data || [];
-      setMembers(data);
+      const membersData = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
 
-      if (data.length > 0) {
-        setCurrentPerson(data[0].memberName);
+      setMembers(membersData);
+
+      if (membersData.length > 0) {
+        setCurrentPerson(membersData[0]._id);
+      } else {
+        setCurrentPerson(null);
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to load family timeline');
+      console.error('Failed to fetch timeline:', err);
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to load family timeline';
+      Alert.alert('Error', errorMsg);
     } finally {
       setLoading(false);
     }
@@ -69,37 +102,51 @@ export default function FamilyHealthTimeline() {
 
   useEffect(() => {
     loadTimeline();
-  }, []);
+  }, [planId]);
 
-  /* ---------------- ADD EVENT (API) ---------------- */
+  /* ---------------- ADD EVENT (matching web version) ---------------- */
   const handleAddEvent = async () => {
     if (!currentPerson) {
-      Alert.alert('Select a family member first');
+      Alert.alert('Error', 'Please select a family member before adding an event.');
       return;
     }
 
     try {
+      const member = members.find((m) => m._id === currentPerson);
+      if (!member) return;
+
       const session = await getSession();
       if (!session?.token) {
         Alert.alert('Auth Error', 'Please login again');
         return;
       }
 
-      const userId = session?.user?.id || session?.user?._id;
-
+      // Match web payload structure: { memberName, newEvent }
       const payload = {
-        userId,
-        memberName: currentPerson,
-        events: [newEvent],
+        memberName: member.name,
+        newEvent: {
+          type: newEvent.type,
+          label: newEvent.label,
+          date: newEvent.date,
+          notes: newEvent.notes,
+          attachmentUrl: null,
+        },
       };
 
-      const res = await axios.post(API_BASE_URL, payload, {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-        },
-      });
+      // Match web endpoint: POST /api/family-health-timeline
+      await axios.post(
+        `${API_BASE_URL}/family-health-timeline`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${session.token}`,
+          },
+        }
+      );
 
-      setMembers(res.data?.data || []);
+      // Refresh timeline from DB (like web version)
+      await loadTimeline();
+
       setShowModal(false);
       setNewEvent({
         type: 'Doctor',
@@ -107,28 +154,45 @@ export default function FamilyHealthTimeline() {
         date: '',
         notes: '',
       });
+
+      Alert.alert('Success', 'Event saved successfully');
     } catch (err) {
-      Alert.alert('Error', 'Failed to save event');
+      console.error('Add event error:', err?.response?.data || err);
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to save event';
+      Alert.alert('Error', errorMsg);
     }
   };
 
-  /* ---------------- DELETE EVENT (ADMIN) ---------------- */
-  const handleDeleteEvent = async eventId => {
+  /* ---------------- DELETE EVENT (ADMIN - matching web version) ---------------- */
+  const handleDeleteEvent = async (eventId) => {
     try {
-      const session = await getSession();
-      if (!session?.token) return;
+      const member = members.find((m) => m._id === currentPerson);
+      if (!member) return;
 
-      const res = await axios.delete(
-        `${API_BASE_URL}/${encodeURIComponent(currentPerson)}/${eventId}`,
+      const session = await getSession();
+      if (!session?.token) {
+        Alert.alert('Auth Error', 'Please login again');
+        return;
+      }
+
+      // Match web endpoint: DELETE /api/family-health-timeline/:memberName/:eventId
+      const updated = await axios.delete(
+        `${API_BASE_URL}/family-health-timeline/${encodeURIComponent(member.name)}/${eventId}`,
         {
           headers: {
             Authorization: `Bearer ${session.token}`,
           },
-        },
+        }
       );
 
-      setMembers(res.data?.data || []);
+      // Refresh timeline
+      await loadTimeline();
     } catch (err) {
+      console.error('Error deleting event:', err);
       Alert.alert('Error', 'Failed to delete event');
     }
   };
@@ -137,13 +201,24 @@ export default function FamilyHealthTimeline() {
     Alert.alert('Export', 'Local export placeholder');
   };
 
+  if (loading && members.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#0d6efd" />
+        <Text style={{ marginTop: 12 }}>Loading timeline...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>👨‍👩‍👧 Family Health Timeline & Milestones</Text>
 
       <View style={styles.infoBar}>
         <Text>
-          Viewing: <Text style={styles.bold}>{currentPerson}</Text>
+          Viewing: <Text style={styles.bold}>
+            {selectedMember?.name || 'Select a member'}
+          </Text>
         </Text>
         <View style={styles.switchRow}>
           <Text>Admin Mode</Text>
@@ -152,12 +227,16 @@ export default function FamilyHealthTimeline() {
       </View>
 
       <View style={styles.pickerWrapper}>
-        <Picker selectedValue={currentPerson} onValueChange={setCurrentPerson}>
+        <Picker 
+          selectedValue={currentPerson || ''} 
+          onValueChange={setCurrentPerson}
+        >
+          <Picker.Item label="-- Select Family Member --" value="" />
           {members.map(m => (
             <Picker.Item
               key={m._id}
-              label={m.memberName}
-              value={m.memberName}
+              label={m.name}
+              value={m._id}
             />
           ))}
         </Picker>
