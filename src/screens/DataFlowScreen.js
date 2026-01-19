@@ -51,7 +51,8 @@ const screenWidth = Dimensions.get("window").width;
 const DataFlowScreen = () => {
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.heading}> BBSCART Data Flow</Text>
+      <Text style={styles.heading}>  BBS Global Health Access </Text>
+      <Text style={styles.subtite}>Data Flow</Text>
       <Text style={styles.subheading}>
         Understand how your Care Pass works behind the scenes.
       </Text>
@@ -80,8 +81,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginVertical: 10,
   },
+  subtite: {
+    fontSize: 16,
+    textAlign: "center",
+    color: "#555",
+    marginBottom: 10,
+  },
   subheading: {
-    fontSize: 14,
+    fontSize: 18,
     textAlign: "center",
     color: "#555",
     marginBottom: 20,

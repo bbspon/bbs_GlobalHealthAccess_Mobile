@@ -20,6 +20,7 @@ export default function InsuranceIntegration() {
   const [err, setErr] = useState('');
   const [showCompare, setShowCompare] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [pendingPolicy, setPendingPolicy] = useState(null);
   const [autoRenew, setAutoRenew] = useState(true);
   const [showHelpBot, setShowHelpBot] = useState(false);
 
@@ -27,23 +28,28 @@ export default function InsuranceIntegration() {
     fetchPolicies();
   }, []);
 
-  /* ===== FIXED API CALL ===== */
+  /* ===== API CALL ===== */
   const fetchPolicies = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/insurance`);
-      console.log('✅ Insurance data:', res.data);
       setPolicies(res.data?.data || []);
     } catch (error) {
-      console.error('❌ Insurance fetch failed', error);
       setErr('Failed to fetch insurance partners');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBuy = plan => {
-    setSelectedPolicy(plan);
+  /* ===== SELECT PLAN ===== */
+  const handleBuy = planName => {
+    setPendingPolicy(planName); // temporary
     setShowCompare(true);
+  };
+
+  /* ===== CONFIRM PLAN ===== */
+  const confirmPurchase = () => {
+    setSelectedPolicy(pendingPolicy); // final selection
+    setShowCompare(false);
   };
 
   const insuranceOptions = [
@@ -65,6 +71,7 @@ export default function InsuranceIntegration() {
         </Text>
       </View>
 
+      {/* ================= CURRENT INSURANCE ================= */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Your Current Insurance</Text>
 
@@ -77,18 +84,8 @@ export default function InsuranceIntegration() {
         ) : (
           <>
             <View style={styles.tableHeader}>
-              {[
-                'Name',
-                'Coverage',
-                'Partner',
-                'Status',
-                'Remarks',
-                'Synced',
-              ].map(h => (
-                <Text
-                  key={h}
-                  style={[styles.tableCell, styles.tableHeaderCell]}
-                >
+              {['Name', 'Coverage', 'Partner', 'Status', 'Remarks', 'Synced'].map(h => (
+                <Text key={h} style={[styles.tableCell, styles.tableHeaderCell]}>
                   {h}
                 </Text>
               ))}
@@ -102,10 +99,7 @@ export default function InsuranceIntegration() {
                 <Text
                   style={[
                     styles.tableCell,
-                    {
-                      color: p.status === 'Active' ? 'green' : 'gray',
-                      fontWeight: 'bold',
-                    },
+                    { color: p.status === 'Active' ? 'green' : 'gray', fontWeight: 'bold' },
                   ]}
                 >
                   {p.status}
@@ -119,36 +113,43 @@ export default function InsuranceIntegration() {
 
             <View style={styles.switchRow}>
               <Text>Auto-Renew Insurance Yearly</Text>
-              <Switch
-                value={autoRenew}
-                onValueChange={() => setAutoRenew(!autoRenew)}
-              />
+              <Switch value={autoRenew} onValueChange={setAutoRenew} />
             </View>
           </>
         )}
       </View>
 
+      {/* ================= COMPARE & ADD ================= */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Compare & Add New Insurance</Text>
+
         <FlatList
           horizontal
           data={insuranceOptions}
           keyExtractor={item => item.name}
           showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <View style={styles.planCard}>
-              <Text style={styles.planName}>{item.name}</Text>
-              <Text>
-                {item.cover} cover • {item.price}
-              </Text>
-              <TouchableOpacity
-                style={styles.buyButton}
-                onPress={() => handleBuy(item.name)}
-              >
-                <Text style={{ color: '#fff' }}>Select</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const isSelected = selectedPolicy === item.name;
+            return (
+              <View style={styles.planCard}>
+                <Text style={styles.planName}>{item.name}</Text>
+                <Text>{item.cover} cover • {item.price}</Text>
+
+                <TouchableOpacity
+                  style={[
+                    styles.buyButton,
+                    isSelected && { backgroundColor: 'green' },
+                  ]}
+                  disabled={isSelected}
+                  onPress={() => handleBuy(item.name)}
+                >
+                  <Text style={{ color: '#fff' }}>
+                    {isSelected ? 'Selected' : 'Select'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }}
         />
 
         <View style={styles.consentRow}>
@@ -159,38 +160,32 @@ export default function InsuranceIntegration() {
         </View>
       </View>
 
-      <TouchableOpacity
-        style={styles.helpButton}
-        onPress={() => setShowHelpBot(true)}
-      >
+      {/* ================= HELP ================= */}
+      <TouchableOpacity style={styles.helpButton} onPress={() => setShowHelpBot(true)}>
         <Text>💬 Ask Insurance Coach</Text>
       </TouchableOpacity>
 
-      {/* BUY MODAL */}
+      {/* ================= BUY MODAL ================= */}
       <Modal visible={showCompare} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              Buy Insurance from {selectedPolicy}
+              Buy Insurance from {pendingPolicy}
             </Text>
+
             <Text>
-              You're being redirected to {selectedPolicy}'s secure portal to
-              complete your purchase.
+              You're being redirected to {pendingPolicy}'s secure portal.
             </Text>
+
             <TouchableOpacity
               style={[styles.buyButton, { marginTop: 16 }]}
-              onPress={() => setShowCompare(false)}
+              onPress={confirmPurchase}
             >
               <Text style={{ color: '#fff' }}>Continue to Insurer</Text>
             </TouchableOpacity>
+
             <TouchableOpacity onPress={() => setShowCompare(false)}>
-              <Text
-                style={{
-                  color: 'red',
-                  textAlign: 'center',
-                  marginTop: 8,
-                }}
-              >
+              <Text style={{ color: 'red', textAlign: 'center', marginTop: 8 }}>
                 Close
               </Text>
             </TouchableOpacity>
@@ -198,36 +193,21 @@ export default function InsuranceIntegration() {
         </View>
       </Modal>
 
-      {/* HELP BOT */}
+      {/* ================= HELP BOT ================= */}
       <Modal visible={showHelpBot} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Insurance Coach</Text>
 
             <Text style={styles.question}>
-              Q: Why do I need IPD insurance if I have a Care Pass?
+              Q: Why do I need IPD insurance?
             </Text>
             <Text>
-              A: Care Pass only covers outpatient visits. For hospitalizations,
-              ICU, or surgeries, you need extra protection through insurance.
-            </Text>
-
-            <Text style={styles.question}>
-              Q: What if my claim is rejected?
-            </Text>
-            <Text>
-              A: The insurer handles claims directly, but we provide support and
-              escalation if required.
+              A: OPD passes don’t cover hospitalizations or ICU stays.
             </Text>
 
             <TouchableOpacity onPress={() => setShowHelpBot(false)}>
-              <Text
-                style={{
-                  color: 'red',
-                  textAlign: 'center',
-                  marginTop: 16,
-                }}
-              >
+              <Text style={{ color: 'red', textAlign: 'center', marginTop: 16 }}>
                 Close
               </Text>
             </TouchableOpacity>
@@ -238,34 +218,27 @@ export default function InsuranceIntegration() {
   );
 }
 
-/* ===== STYLES UNCHANGED ===== */
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#f2f2f2' },
-  header: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  alert: {
-    backgroundColor: '#cce5ff',
-    padding: 10,
-    borderRadius: 4,
-    marginBottom: 12,
-  },
-  card: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
+  header: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 ,textAlign: 'center',},
+  alert: { backgroundColor: '#cce5ff', padding: 10, borderRadius: 4, marginBottom: 12 },
+  card: { backgroundColor: '#fff', padding: 12, borderRadius: 8, marginBottom: 12 },
   cardTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  error: { color: 'red', marginBottom: 8 },
+  error: { color: 'red' },
+
   tableHeader: { flexDirection: 'row', marginBottom: 4 },
   tableHeaderCell: { fontWeight: 'bold' },
   tableRow: { flexDirection: 'row', marginBottom: 2 },
   tableCell: { flex: 1, fontSize: 12 },
+
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
   },
+
   planCard: {
     backgroundColor: '#fff',
     padding: 12,
@@ -274,14 +247,17 @@ const styles = StyleSheet.create({
     width: 200,
   },
   planName: { fontWeight: 'bold', marginBottom: 4 },
+
   buyButton: {
     backgroundColor: '#007bff',
     padding: 8,
     borderRadius: 4,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
   },
+
   consentRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+
   helpButton: {
     backgroundColor: '#eee',
     padding: 10,
@@ -289,6 +265,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',

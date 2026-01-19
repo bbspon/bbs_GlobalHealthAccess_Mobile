@@ -232,21 +232,39 @@ const PaymentsWalletPage = () => {
         </Text>
       </View>
 
-      <TouchableOpacity
-        style={styles.accordionHeader}
-        onPress={() => setOffersOpen(!offersOpen)}
-      >
-        <Text style={styles.cardTitle}>🎁 Available Offers</Text>
-        <Text>{offersOpen ? '▲' : '▼'}</Text>
-      </TouchableOpacity>
+<TouchableOpacity
+  style={styles.accordionHeader}
+  onPress={() => setOffersOpen(!offersOpen)}
+>
+  <Text style={styles.cardTitle}>🎁 Available Offers</Text>
+  <Text style={styles.arrow}>{offersOpen ? '▲' : '▼'}</Text>
+</TouchableOpacity>
 
-      {offersOpen && (
-        <View style={styles.card}>
-          <Text>💸 ₹50 Cashback on ₹500 Top-up</Text>
-          <Text>🎁 10% off Premium Plan</Text>
-          <Text>🆓 Free Plan for Approved Users</Text>
-        </View>
-      )}
+{offersOpen && (
+  <View style={styles.offerContainer}>
+    <View style={styles.offerItem}>
+      <Text style={styles.offerIcon}>💸</Text>
+      <Text style={styles.offerText}>
+        ₹50 Cashback on ₹500 Top-up
+      </Text>
+    </View>
+
+    <View style={styles.offerItem}>
+      <Text style={styles.offerIcon}>🎁</Text>
+      <Text style={styles.offerText}>
+        10% off Premium Plan
+      </Text>
+    </View>
+
+    <View style={styles.offerItem}>
+      <Text style={styles.offerIcon}>🆓</Text>
+      <Text style={styles.offerText}>
+        Free Plan for Approved Users
+      </Text>
+    </View>
+  </View>
+)}
+
 
       <Modal
         transparent
@@ -263,8 +281,10 @@ const PaymentsWalletPage = () => {
               style={styles.input}
               value={topupAmount}
               onChangeText={setTopupAmount}
+              placeholderTextColor="#888"  
             />
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end',
+               marginTop: 16 }}>
               <TouchableOpacity
                 style={[
                   styles.button,
@@ -290,7 +310,7 @@ const PaymentsWalletPage = () => {
 
 // STYLES UNCHANGED
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: '#fff', padding: 19 },
   heading: { fontSize: 20, fontWeight: 'bold' },
   headerRow: {
     flexDirection: 'row',
@@ -303,21 +323,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#ddd',
-    marginBottom: 16,
+    marginBottom: 45,
   },
   cardTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
   balance: { fontSize: 28, fontWeight: 'bold', marginVertical: 8 },
   smallText: { fontSize: 12, color: '#666', marginTop: 6 },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    padding: 10,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 6,
+  padding: 15,
+  color: '#000',               // ✅ text visible
+  backgroundColor: '#fff',     // ✅ prevents blending
+  fontSize: 14, minHeight:45,
+
   },
   row: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   picker: { borderWidth: 1, borderColor: '#ccc', marginBottom: 10 },
-  button: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 6 },
+  button: { paddingVertical: 6, paddingHorizontal: 8, borderRadius: 6 },
   buttonText: { color: '#fff', fontWeight: 'bold' },
   accordionHeader: {
     flexDirection: 'row',
@@ -338,10 +362,47 @@ const styles = StyleSheet.create({
   modalBox: {
     width: '80%',
     backgroundColor: '#fff',
-    padding: 20,
+    padding: 30,
     borderRadius: 8,
   },
   modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
+  accordionHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: 12,
+  backgroundColor: '#fff',
+  borderRadius: 8,
+  marginBottom: 4,
+},
+
+arrow: {
+  fontSize: 16,
+},
+
+offerContainer: {
+  backgroundColor: '#fff',
+  padding: 12,
+  borderRadius: 8,
+  marginBottom: 25,
+},
+
+offerItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+
+offerIcon: {
+  fontSize: 18,
+  marginRight: 8,
+},
+
+offerText: {
+  fontSize: 14,
+  color: '#000',
+},
+
 });
 
 export default PaymentsWalletPage;
