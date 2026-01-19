@@ -15,14 +15,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
 import HEALTHLOGO from '../assets/images/banner1.png';
-import Icon from 'react-native-vector-icons/Ionicons';
 
 const API_BASE_URL = 'https://healthcare.bbscart.com/api';
 // Same base URL used in web (VITE_API_URI)
 
 const SignInScreen = () => {
   const navigation = useNavigation();
-  const [showPassword, setShowPassword] = useState(false);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
