@@ -8,9 +8,11 @@ import {
   ActivityIndicator,
    Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 
 export default function HealthAccessScreen() {
+  const navigation = useNavigation();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -88,22 +90,7 @@ export default function HealthAccessScreen() {
 
    <TouchableOpacity
   style={[styles.button, { backgroundColor: plan.color }]}
-  onPress={() =>
-    Alert.alert(
-      'Join Plan',
-      `Do you want to join the  plan?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'OK',
-          onPress: () => {
-            console.log('User joined plan:', plan.name);
-          },
-        },
-      ],
-      { cancelable: true }
-    )
-  }
+  onPress={() => navigation.navigate('Health Plans')}
 >
   <Text style={styles.buttonText}>Join Now</Text>
 </TouchableOpacity>

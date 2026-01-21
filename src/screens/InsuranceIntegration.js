@@ -132,8 +132,10 @@ export default function InsuranceIntegration() {
             const isSelected = selectedPolicy === item.name;
             return (
               <View style={styles.planCard}>
-                <Text style={styles.planName}>{item.name}</Text>
-                <Text>{item.cover} cover • {item.price}</Text>
+                <View>
+                  <Text style={styles.planName}>{item.name}</Text>
+                  <Text style={styles.planDetails}>{item.cover} cover • {item.price}</Text>
+                </View>
 
                 <TouchableOpacity
                   style={[
@@ -143,7 +145,7 @@ export default function InsuranceIntegration() {
                   disabled={isSelected}
                   onPress={() => handleBuy(item.name)}
                 >
-                  <Text style={{ color: '#fff' }}>
+                  <Text style={styles.buttonText}>
                     {isSelected ? 'Selected' : 'Select'}
                   </Text>
                 </TouchableOpacity>
@@ -181,7 +183,7 @@ export default function InsuranceIntegration() {
               style={[styles.buyButton, { marginTop: 16 }]}
               onPress={confirmPurchase}
             >
-              <Text style={{ color: '#fff' }}>Continue to Insurer</Text>
+              <Text style={styles.buttonText}>Continue to Insurer</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => setShowCompare(false)}>
@@ -245,15 +247,37 @@ const styles = StyleSheet.create({
     marginRight: 12,
     borderRadius: 8,
     width: 200,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    justifyContent: 'space-between',
+    minHeight: 140,
   },
-  planName: { fontWeight: 'bold', marginBottom: 4 },
+  planName: { 
+    fontWeight: 'bold', 
+    marginBottom: 4,
+    fontSize: 16,
+  },
+  planDetails: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 8,
+  },
 
   buyButton: {
     backgroundColor: '#007bff',
-    padding: 8,
+    padding: 10,
     borderRadius: 4,
     alignItems: 'center',
-    marginTop: 6,
+    justifyContent: 'center',
+    marginTop: 8,
+    width: '100%',
+    minHeight: 40,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   consentRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },

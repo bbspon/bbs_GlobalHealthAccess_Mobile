@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  Linking,
+  Alert,
+  Platform,
 } from "react-native";
-import RNPrint from 'react-native-print';
+import { useNavigation } from '@react-navigation/native';
+import RNHTMLtoPDF from 'react-native-html-to-pdf';
 
 // Sample Insurance Help Center Data
 const INSURANCE_HELP_DATA = [
@@ -63,27 +65,9 @@ const INSURANCE_HELP_DATA = [
 ];
 
 const categories = [...new Set(INSURANCE_HELP_DATA.map((item) => item.category))];
-async function handlePrint() {
-  const html = `
-    <html>
-      <body>
-        <h1>Insurance Help Center</h1>
-        ${INSURANCE_HELP_DATA.map(item => `
-          <h3>${item.title}</h3>
-          <p>${item.content}</p>
-          <small>Last updated: ${item.lastUpdated}</small>
-          <hr />
-        `).join('')}
-      </body>
-    </html>
-  `;
-
-  await RNPrint.print({
-    html,
-  });
-}
 
 export default function HelpCenter() {
+  const navigation = useNavigation();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredItems, setFilteredItems] = useState(INSURANCE_HELP_DATA);
   const [expandedId, setExpandedId] = useState(null);
@@ -117,6 +101,58 @@ export default function HelpCenter() {
     setFeedback((prev) => ({ ...prev, [id]: response }));
     console.log(`Feedback for ${id}: ${response}`);
   }
+
+  // Handle Print - Generate PDF that works on real devices
+  const handlePrint = async () => {
+    try {
+      const html = `
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              h1 { color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; }
+              h3 { color: #333; margin-top: 20px; }
+              p { line-height: 1.6; color: #555; }
+              small { color: #888; font-size: 12px; }
+              hr { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <h1>Insurance Help Center</h1>
+            ${INSURANCE_HELP_DATA.map(item => `
+              <h3>${item.title}</h3>
+              <p>${item.content}</p>
+              <small>Last updated: ${item.lastUpdated}</small>
+              <hr />
+            `).join('')}
+          </body>
+        </html>
+      `;
+
+      const options = {
+        html,
+        fileName: `Insurance_Help_Center_${Date.now()}`,
+        directory: Platform.OS === 'android' ? 'Download' : 'Documents',
+      };
+
+      const file = await RNHTMLtoPDF.convert(options);
+      
+      Alert.alert(
+        'PDF Generated Successfully',
+        `File saved to:\n${file.filePath}\n\nYou can now share or print this file.`,
+        [
+          { text: 'OK', style: 'default' }
+        ]
+      );
+    } catch (err) {
+      console.error('Print error:', err);
+      Alert.alert(
+        'Print Functionality Unavailable',
+        'Unable to generate PDF. Please try again later or contact support.',
+        [{ text: 'OK', style: 'default' }]
+      );
+    }
+  };
 
   function highlight(text) {
     if (!searchTerm) return text;
@@ -208,7 +244,7 @@ export default function HelpCenter() {
         </Text>
         <TouchableOpacity
           style={styles.contactButton}
-          onPress={() => Linking.openURL("/contactus")}
+          onPress={() => navigation.navigate('Contact Us')}
         >
           <Text style={styles.contactButtonText}>Contact Insurance Support</Text>
         </TouchableOpacity>
