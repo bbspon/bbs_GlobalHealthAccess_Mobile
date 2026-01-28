@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // IMPORTANT
 // Android Emulator → http://10.0.2.2:5000
@@ -32,6 +33,7 @@ const LabDiagnostics = () => {
   const [selectedLab, setSelectedLab] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [alertMsg, setAlertMsg] = useState('');
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   // -----------------------------
   // FETCH LABS (same as web)
@@ -73,21 +75,64 @@ const LabDiagnostics = () => {
   });
 
   // -----------------------------
+  // GET AUTH TOKEN
+  // -----------------------------
+  const getToken = async () => {
+    const raw = await AsyncStorage.getItem('bbsUser');
+    return raw ? JSON.parse(raw)?.token : null;
+  };
+
+  // -----------------------------
   // BOOK LAB
   // -----------------------------
   const confirmBooking = async () => {
     if (!selectedLab) return;
 
+    setBookingLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/api/labs/book`, {
-        labId: selectedLab.id,
+      const token = await getToken();
+      
+      if (!token) {
+        Alert.alert('Authentication Error', 'Please login to book a lab test.');
+        setShowModal(false);
+        setBookingLoading(false);
+        return;
+      }
+
+      // Prepare booking payload
+      const payload = {
+        labId: selectedLab.id || selectedLab._id,
+        labName: selectedLab.name,
+        testType: testType || 'General',
+        city: selectedLab.city,
+        homePickup: homePickup,
+      };
+
+      // Fix: Remove extra /api from endpoint
+      const response = await axios.post(`${API_BASE_URL}/labs/book`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
       setAlertMsg(`✅ Booking confirmed with ${selectedLab.name}`);
       setShowModal(false);
       setSelectedLab(null);
+      
+      // Reset form after successful booking
+      setTestType('');
+      setHomePickup(false);
     } catch (err) {
-      Alert.alert('Error', '❌ Booking failed. Please try again.');
+      console.error('Booking error:', err?.response?.data || err);
+      const errorMessage = 
+        err?.response?.data?.message || 
+        err?.response?.data?.error || 
+        err?.message || 
+        'Booking failed. Please try again.';
+      Alert.alert('Error', `❌ ${errorMessage}`);
+    } finally {
+      setBookingLoading(false);
     }
   };
 
@@ -182,10 +227,15 @@ const LabDiagnostics = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.confirmBtn}
+                style={[styles.confirmBtn, bookingLoading && { opacity: 0.6 }]}
                 onPress={confirmBooking}
+                disabled={bookingLoading}
               >
-                <Text style={{ color: '#fff' }}>Confirm</Text>
+                {bookingLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={{ color: '#fff' }}>Confirm</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

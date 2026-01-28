@@ -66,11 +66,7 @@ const features = [
   },
   { icon: 'hospital-building', label: 'Insurance Plans', route: 'InsuranceIntegration' },
   { icon: 'stethoscope', label: 'Consult Room', route: 'ConsultRoom' },
-  {
-    icon: 'account-group',
-    label: 'Family Health',
-    route: 'FamilyHealthTimeline',
-  },
+
   {
     icon: 'account-group',
     label: 'Feedback & Support',

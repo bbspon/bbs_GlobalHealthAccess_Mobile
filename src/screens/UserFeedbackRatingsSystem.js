@@ -9,6 +9,7 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -221,14 +222,22 @@ export default function UserFeedbackRatingsSystem({ partnerId }) {
         <View style={styles.card}>
           <Text style={styles.title}>Post-Visit Feedback</Text>
 
-          {/* Service Type (matching web version) */}
+          {/* Service Type (matching web version - dropdown) */}
           <Text style={styles.label}>Service Type</Text>
-          <TextInput
-            placeholder="e.g., doctor, lab, opd, pharmacy, app"
-            style={styles.input}
-            value={prompt.type}
-            onChangeText={t => setPrompt({ ...prompt, type: t })}
-          />
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={prompt.type}
+              onValueChange={value => setPrompt({ ...prompt, type: value })}
+              style={styles.picker}
+            >
+              <Picker.Item label="Select..." value="" />
+              <Picker.Item label="OPD Visit" value="opd" />
+              <Picker.Item label="Doctor Appointment" value="doctor" />
+              <Picker.Item label="Lab Test" value="lab" />
+              <Picker.Item label="Pharmacy" value="pharmacy" />
+              <Picker.Item label="App Experience" value="app" />
+            </Picker>
+          </View>
 
           {/* Rating Selection */}
           <Text style={styles.label}>Rating (1-5)</Text>
@@ -367,6 +376,16 @@ const styles = StyleSheet.create({
   },
   emojiActive: { backgroundColor: '#dbeafe' },
   emoji: { fontSize: 24 },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginBottom: 10,
+    backgroundColor: '#fff',
+  },
+  picker: {
+    height: 50,
+  },
   input: {
     borderWidth: 1,
     padding: 10,

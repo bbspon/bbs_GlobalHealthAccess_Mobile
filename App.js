@@ -171,7 +171,7 @@ function DrawerStack() {
         component={HealthPlansLandingScreen}
         options={{
           drawerIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="heart" color={color} size={size} />
+            <MaterialCommunityIcons name="file-document-multiple" color={color} size={size} />
           ),
         }}
       />
